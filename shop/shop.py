@@ -105,7 +105,10 @@ class Mainwindow(QMainWindow):
                 return
             id, name, price, discount, quantity = [self.dbTableWidget.item(i, x).text() for x in range(5)]
             id, name, price, discount, quantity = int(id), name.upper(), float(price), int(discount), int(quantity)
-            if quantity == 0 or (name in self.order and quantity == self.order[name][4]):
+            if quantity == 0 and name in self.order:
+                del self.order[name]
+                continue
+            elif quantity == 0 or (name in self.order and quantity == self.order[name][4]):
                 continue
             total = round(quantity * price * (100 - discount) / 100, 2)
             discount = '       ' if discount == 0 else str(discount) + '%'
