@@ -87,6 +87,9 @@
     <property name="text">
      <string>Войти</string>
     </property>
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QLabel" name="errorLabel">
     <property name="geometry">
