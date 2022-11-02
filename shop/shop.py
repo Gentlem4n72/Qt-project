@@ -12,7 +12,7 @@ from PyQt5 import uic
 class Homepage(QMainWindow):
     def __init__(self):
         super(Homepage, self).__init__()
-        uic.loadUi('Homepage.ui', self)
+        uic.loadUi('UI/Homepage.ui', self)
 
         self.enterButton.clicked.connect(self.enter)
         self.enterButton.setEnabled(False)
@@ -20,7 +20,7 @@ class Homepage(QMainWindow):
         self.passwordLine.textChanged.connect(self.clear)
 
     def enter(self):
-        accounts = sqlite3.connect('shop_db.sqlite')
+        accounts = sqlite3.connect('db/shop_db.sqlite')
         cur = accounts.cursor()
         login, password = self.loginLine.text(), self.passwordLine.text()
         result = cur.execute('''SELECT name, post, login, password FROM staff
@@ -48,7 +48,7 @@ class Homepage(QMainWindow):
 class Mainwindow(QMainWindow):
     def __init__(self):
         super(Mainwindow, self).__init__()
-        uic.loadUi('Mainwindow.ui', self)
+        uic.loadUi('UI/Mainwindow.ui', self)
 
         self.current_amount = 0
         self.current_sum = 0.0
@@ -57,7 +57,7 @@ class Mainwindow(QMainWindow):
 
         self.fname = 'check.docx'
 
-        self.connection = sqlite3.connect("shop_db.sqlite")
+        self.connection = sqlite3.connect("db/shop_db.sqlite")
         self.cursor = self.connection.cursor()
         self.search()
 
