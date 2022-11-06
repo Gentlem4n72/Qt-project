@@ -6,6 +6,7 @@ from docxtpl import DocxTemplate
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QFileDialog
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
+from PyQt5.QtCore import Qt
 from PyQt5 import uic
 
 
@@ -31,6 +32,7 @@ class Homepage(QMainWindow):
             mainwindow.post = cur.execute('''SELECT title FROM posts
                                                     WHERE postid = ?''', (result[1])).fetchone()[0]
             mainwindow.show()
+            mainwindow.search()
             homepage.close()
         else:
             self.errorLabel.setText('Не удалось найти аккаунт с данными логином и паролем')
@@ -59,7 +61,6 @@ class Mainwindow(QMainWindow):
 
         self.connection = sqlite3.connect("db/shop_db.sqlite")
         self.cursor = self.connection.cursor()
-        self.search()
 
         self.newOrderButton.clicked.connect(self.new_order)
         self.cancelButton.clicked.connect(self.cancel)
@@ -137,17 +138,12 @@ class Mainwindow(QMainWindow):
             self.amountLine.setText(str(self.current_amount))
             self.resultSumLine.setText(str(self.current_sum))
         elif item.column() > 0:
-            if self.post == 'Менеджер':
-                id, name, price, discount = (self.dbTableWidget.item(item.row(), x).text() for x in range(4))
-                self.cursor.execute('''UPDATE items
-                                        SET name = ?, price = ?, discount = ?
-                                        WHERE id = ?''', (name, price, discount, id))
-                self.connection.commit()
-                self.current_amount_sum(self.dbTableWidget.item(item.row(), 4))
-            else:
-                self.errorLabel.setText('Вам не доступно изменение значений таблицы')
-        else:
-            self.errorLabel.setText('Нельзя менять ID товаров')
+            id, name, price, discount = (self.dbTableWidget.item(item.row(), x).text() for x in range(4))
+            self.cursor.execute('''UPDATE items
+                                    SET name = ?, price = ?, discount = ?
+                                    WHERE id = ?''', (name, price, discount, id))
+            self.connection.commit()
+            self.current_amount_sum(self.dbTableWidget.item(item.row(), 4))
 
     def search(self):
         request = f'%{self.searchLine.text()}%'
@@ -165,12 +161,17 @@ class Mainwindow(QMainWindow):
         horizontal_h.resizeSection(3, 80)
         horizontal_h.resizeSection(4, 80)
 
+        edit_flag = self.post == 'Менеджер'
+
         for i, row in enumerate(res):
             self.dbTableWidget.setRowCount(
                 self.dbTableWidget.rowCount() + 1)
             for j, elem in enumerate(row):
                 self.dbTableWidget.setItem(
                     i, j, QTableWidgetItem(str(elem)))
+                if j == 0 or (not edit_flag and j != 4):
+                    self.dbTableWidget.item(i, j).setFlags(
+                        self.dbTableWidget.item(i, j).flags() ^ Qt.ItemIsEditable)
 
     def closeEvent(self, event):
         self.cursor.execute('''UPDATE items
