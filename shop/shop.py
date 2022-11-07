@@ -103,8 +103,10 @@ class Mainwindow(QMainWindow):
         self.order = {}
         self.overall_discount = 0
         self.cursor.execute('''UPDATE items SET quantity = 0''')
-        self.searchLine.setText('')
+        self.searchLine.clear()
         self.search()
+        self.amountLine.setText('0')
+        self.resultSumLine.setText('0.0')
         self.checkPreviewText.clear()
         self.fname = 'check.docx'
 
@@ -118,32 +120,40 @@ class Mainwindow(QMainWindow):
             return
 
         if item.column() == 4:
-            id, name, price, discount, quantity = (self.dbTableWidget.item(item.row(), x).text() for x in range(5))
-            id, name, price, discount, quantity = int(id), name.upper(), float(price), int(discount), int(quantity)
-            if quantity == 0 and id in self.order:
-                del self.order[id]
-                self.cursor.execute('''UPDATE items
-                                        SET quantity = 0
-                                        WHERE id = ?''', (id,))
-            else:
-                total = round(quantity * price * (100 - discount) / 100, 2)
-                discount = '       ' if discount == 0 else str(discount) + '%'
-                self.order[id] = (id, name, price, discount, quantity, total)
-                self.cursor.execute('''UPDATE items
-                                        SET quantity = ?
-                                        WHERE id = ?''', (quantity, id))
-            self.overall_discount = round(sum(x[1][4] * x[1][2] - x[1][5] for x in self.order.items()), 2)
-            self.current_amount = sum(x[1][4] for x in self.order.items())
-            self.current_sum = round(sum(x[1][5] for x in self.order.items()), 2)
-            self.amountLine.setText(str(self.current_amount))
-            self.resultSumLine.setText(str(self.current_sum))
+            self.calculate(item)
         elif item.column() > 0:
-            id, name, price, discount = (self.dbTableWidget.item(item.row(), x).text() for x in range(4))
+            self.edit(item)
+
+    def calculate(self, item):
+        id, name, price, discount, quantity = (self.dbTableWidget.item(item.row(), x).text() for x in range(5))
+        id, name, price, discount, quantity = int(id), name.upper(), float(price), int(discount), int(quantity)
+        if quantity == 0 and id in self.order:
+            del self.order[id]
             self.cursor.execute('''UPDATE items
-                                    SET name = ?, price = ?, discount = ?
-                                    WHERE id = ?''', (name, price, discount, id))
-            self.connection.commit()
-            self.current_amount_sum(self.dbTableWidget.item(item.row(), 4))
+                                    SET quantity = 0
+                                    WHERE id = ?''', (id,))
+        elif quantity == 0:
+            return
+        else:
+            total = round(quantity * price * (100 - discount) / 100, 2)
+            discount = '       ' if discount == 0 else str(discount) + '%'
+            self.order[id] = (id, name, price, discount, quantity, total)
+            self.cursor.execute('''UPDATE items
+                                    SET quantity = ?
+                                    WHERE id = ?''', (quantity, id))
+        self.overall_discount = round(sum(x[1][4] * x[1][2] - x[1][5] for x in self.order.items()), 2)
+        self.current_amount = sum(x[1][4] for x in self.order.items())
+        self.current_sum = round(sum(x[1][5] for x in self.order.items()), 2)
+        self.amountLine.setText(str(self.current_amount))
+        self.resultSumLine.setText(str(self.current_sum))
+
+    def edit(self, item):
+        id, name, price, discount = (self.dbTableWidget.item(item.row(), x).text() for x in range(4))
+        self.cursor.execute('''UPDATE items
+                                SET name = ?, price = ?, discount = ?
+                                WHERE id = ?''', (name, price, discount, id))
+        self.connection.commit()
+        self.current_amount_sum(self.dbTableWidget.item(item.row(), 4))
 
     def search(self):
         request = f'%{self.searchLine.text()}%'
