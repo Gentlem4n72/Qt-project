@@ -75,6 +75,11 @@ class Mainwindow(QMainWindow):
         self.connection = sqlite3.connect("db/shop_db.sqlite")
         self.cursor = self.connection.cursor()
 
+        stylesheetHeader = "::section{background-color: rgb(170, 170, 170);" \
+                           "selection-background-color: rgb(255, 255, 255);}"
+        self.dbTableWidget.horizontalHeader().setStyleSheet(stylesheetHeader)
+        self.dbTableWidget.verticalHeader().setStyleSheet(stylesheetHeader)
+
         self.newOrderButton.clicked.connect(self.new_order)
         self.cancelButton.clicked.connect(self.cancel)
         self.formButton.clicked.connect(self.form)
@@ -90,7 +95,7 @@ class Mainwindow(QMainWindow):
             template = DocxTemplate('check_template.docx')
             data = {
                 'items': ['    '.join(map(str, x[:2])) + '\n'
-                          + '                    '.join(map(str, x[2:]))
+                          + '               '.join(map(str, x[2:]))
                           for x in self.order.values()],
                 'discount': self.overall_discount,
                 'total': self.current_sum,
@@ -151,7 +156,7 @@ class Mainwindow(QMainWindow):
                 return
             else:
                 total = round(quantity * price * (100 - discount) / 100, 2)
-                discount = '       ' if discount == 0 else str(discount) + '%'
+                discount = '     ' if discount == 0 else str(discount) + '%'
                 self.order[id] = (id, name, price, discount, quantity, total)
                 self.cursor.execute('''UPDATE items
                                                 SET quantity = ?
@@ -175,7 +180,7 @@ class Mainwindow(QMainWindow):
 
     def search(self):
         #Производит поиск по названию товара в таблице и выводит результат.
-        request = f'%{self.searchLine.text()}%'
+        request = f'%{self.searchLine.text().lower()}%'
         res = self.cursor.execute('''SELECT * FROM items
                                                     WHERE name LIKE ?''', (request,)).fetchall()
         #Конструируем таблицу
@@ -185,10 +190,10 @@ class Mainwindow(QMainWindow):
         self.dbTableWidget.setHorizontalHeaderLabels(('ID', 'Название', 'Цена', 'Cкидка', 'Количество'))
         horizontal_h = self.dbTableWidget.horizontalHeader()
         horizontal_h.resizeSection(0, 30)
-        horizontal_h.resizeSection(1, 265)
+        horizontal_h.resizeSection(1, 258)
         horizontal_h.resizeSection(2, 80)
-        horizontal_h.resizeSection(3, 56)
-        horizontal_h.resizeSection(4, 80)
+        horizontal_h.resizeSection(3, 55)
+        horizontal_h.resizeSection(4, 85)
 
         for i, row in enumerate(res):
             self.dbTableWidget.setRowCount(
@@ -200,6 +205,7 @@ class Mainwindow(QMainWindow):
                     #Колонка "ID" не подлежит изменению, а изменения колонки "Количество" доступно любому сотруднику
                     self.dbTableWidget.item(i, j).setFlags(
                         self.dbTableWidget.item(i, j).flags() ^ Qt.ItemIsEditable)
+
     def add_item(self):
         #Добавляет новый товар в базу данных
         dialog = AddItemDialog()
@@ -214,7 +220,7 @@ class Mainwindow(QMainWindow):
         #Добавляет нового сотрудника в базу данных
         dialog = AddStaffDialog()
         if dialog.exec():
-            name, post, login, password = (dialog.nameLine.text(), dialog.postComboBox.currentText(),
+            name, post, login, password = (dialog.nameLine.text(), dialog.postComboBox.currentText().lower(),
                                            dialog.loginLine.text(), dialog.passwordLine.text())
             post_id = self.cursor.execute('''SELECT postid FROM posts
                                                                 WHERE title = ?''', (post,)).fetchone()
