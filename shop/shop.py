@@ -17,6 +17,9 @@ class Homepage(QMainWindow):
         uic.loadUi('UI/Homepage.ui', self)
         self.setFixedSize(800, 500)
 
+        self.accounts = sqlite3.connect('db/shop_db.sqlite')
+        self.cur = self.accounts.cursor()
+
         self.enterButton.clicked.connect(self.enter)
         self.enterButton.setEnabled(False)
         self.loginLine.textChanged.connect(self.clear)
@@ -26,15 +29,13 @@ class Homepage(QMainWindow):
         #Сопоставляет введенные логин и пароль с логином и паролем из базы данных.
         # При совпадении закрывает это окно и отрывает окно Mainwindow.
         # Иначе выводит сообщение об ошибке.
-        accounts = sqlite3.connect('db/shop_db.sqlite')
-        cur = accounts.cursor()
         login, password = self.loginLine.text(), self.passwordLine.text()
-        result = cur.execute('''SELECT name, post, login, password FROM staff
+        result = self.cur.execute('''SELECT name, post, login, password FROM staff
                                     WHERE login = ? AND password = ?''', (login, password)).fetchone()
 
         if result is not None and (login, password) == result[2:]:
             mainwindow.cashier = result[0]
-            mainwindow.edit_flag = cur.execute('''SELECT title FROM posts
+            mainwindow.edit_flag = self.cur.execute('''SELECT title FROM posts
                                                     WHERE postid = ?''', (result[1])).fetchone()[0] == 'менеджер'
             mainwindow.show()
             if not mainwindow.edit_flag:
@@ -45,8 +46,6 @@ class Homepage(QMainWindow):
         else:
             self.errorLabel.setText('Не удалось найти аккаунт с данными логином и паролем')
 
-        accounts.close()
-
     def clear(self):
         #При редактировании одного из полей убирает сообщение об ошибке и
         #делает активной кнопку входа если оба поля не пустые.
@@ -55,6 +54,9 @@ class Homepage(QMainWindow):
         else:
             self.enterButton.setEnabled(True)
         self.errorLabel.setText('')
+
+    def closeEvent(self, event):
+        self.accounts.close()
 
 
 class Mainwindow(QMainWindow):
@@ -78,7 +80,7 @@ class Mainwindow(QMainWindow):
         stylesheetHeader = "::section{background-color: rgb(170, 170, 170);" \
                            "selection-background-color: rgb(255, 255, 255);}"
         self.dbTableWidget.horizontalHeader().setStyleSheet(stylesheetHeader)
-        self.dbTableWidget.verticalHeader().setStyleSheet(stylesheetHeader)
+        self.dbTableWidget.verticalHeader().hide()
 
         self.newOrderButton.clicked.connect(self.new_order)
         self.cancelButton.clicked.connect(self.cancel)
@@ -116,6 +118,8 @@ class Mainwindow(QMainWindow):
     def select_path(self):
         #Выводит диалоговое окно выбора пути сохранения чека.
         self.fname = QFileDialog.getSaveFileName(self, 'Выбрать путь сохранения', 'check.docx')[0]
+        if self.fname == '':
+            self.fname = 'check.docx'
 
     def new_order(self):
         #Сохраняет текущий заказ и переходит к новому.
@@ -190,9 +194,9 @@ class Mainwindow(QMainWindow):
         self.dbTableWidget.setHorizontalHeaderLabels(('ID', 'Название', 'Цена', 'Cкидка', 'Количество'))
         horizontal_h = self.dbTableWidget.horizontalHeader()
         horizontal_h.resizeSection(0, 30)
-        horizontal_h.resizeSection(1, 258)
+        horizontal_h.resizeSection(1, 277)
         horizontal_h.resizeSection(2, 80)
-        horizontal_h.resizeSection(3, 55)
+        horizontal_h.resizeSection(3, 60)
         horizontal_h.resizeSection(4, 85)
 
         for i, row in enumerate(res):

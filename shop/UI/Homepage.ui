@@ -555,7 +555,7 @@ selection-background-color: rgb(170, 170, 170);</string>
      <string>Войти</string>
     </property>
     <property name="checkable">
-     <bool>true</bool>
+     <bool>false</bool>
     </property>
    </widget>
    <widget class="QLabel" name="errorLabel">
